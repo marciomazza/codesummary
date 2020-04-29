@@ -23,6 +23,9 @@ class DependencyTrackingVisitor(ast.NodeVisitor):
         self.scope = previous_scope  # restore previous scope
 
     def visit_Name(self, node):
+        # there is no case to consider the ast.Del context:
+        # after a "del var" an outer "var" declaration does not become visible
+        # neither in the current nor in inner scopes
         if isinstance(node.ctx, ast.Store):
             self.scope.add(node.id)
         elif (

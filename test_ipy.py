@@ -15,7 +15,7 @@ def load_statements_and_deps():
     the last comment line in the beginning of each block lists the dependencies
     """
     source = Path("statement_stubs.py").read_text()
-    statements = re.split("\n\n+", source)[1:]  # skip the header comment
+    statements = re.split("\n\n\n+", source)[1:]  # skip the header comment
     statements = [RE_STATEMENT.match(s).groups() for s in statements]
     return [(stmt, deps.split()) for _, deps, stmt in statements]
 

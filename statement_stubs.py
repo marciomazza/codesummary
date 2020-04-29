@@ -4,8 +4,10 @@
 #
 a = 1
 
+
 # b
 a = b
+
 
 # x y
 a, b = x, y
@@ -15,6 +17,7 @@ a, b = x, y
 a = f(x + y)
 
 
+# expression in paramenter
 # x
 def f(a, b=x):
     ...
@@ -24,6 +27,14 @@ def f(a, b=x):
 # x
 def f(a, b):
     c = a + x
+
+
+# no repetions
+# x y
+def f():
+    print(x, y)
+    print(x)
+    y = x + y
 
 
 # g
@@ -42,7 +53,25 @@ def f(a):
     re.match(".", a)
 
 
+# local scope variables are ignored
 # a b
 def f():
     x = a + b
     print(x)
+
+
+# free variable outside inner scope
+# x y
+def f():
+    def g(x):
+        y = 1
+
+    return x, y
+
+
+# a b c
+def f(x):
+    w = x + a
+
+    def g(y, z):
+        print(a, b, c, x, y, z)

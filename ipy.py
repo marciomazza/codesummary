@@ -27,16 +27,25 @@ class DependencyTrackingVisitor(ast.NodeVisitor):
         self.generic_visit(node)
         self.scopes.pop()  # restore outer scope
 
+    def store(self, name, ctx):
+        if isinstance(ctx, (ast.Store, ast.Del)):
+            self.current_scope.append(name)
+            return True
+        else:
+            return False
+
     def visit_Name(self, node):
-        # there is no case to consider the ast.Del context:
-        # after a "del var" an outer "var" declaration does not become visible
-        # neither in the current nor in inner scopes
-        if isinstance(node.ctx, ast.Store):
-            self.current_scope.append(node.id)
+        if self.store(node.id, node.ctx):
+            ...  # done
         elif isinstance(node.ctx, ast.Load) and not any(
             node.id in seen for seen in (BUILTINS, *self.scopes, self.loads,)
         ):
             self.loads.append(node.id)
+
+    def visit_Subscript(self, node):
+        self.generic_visit(node)
+        if isinstance(node.value, ast.Name):
+            self.store(node.value.id, node.ctx)
 
     def scan(self, statement):
         self.scopes, self.loads = [[]], []

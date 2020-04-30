@@ -62,3 +62,13 @@ def f(x):
 
     def g(y, z):
         print(a, b, c, x, y, z)
+
+
+# function referenced after defined
+# f | h
+def f():
+    def g():
+        ...
+
+    g()
+    h()

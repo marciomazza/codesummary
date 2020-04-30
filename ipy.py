@@ -6,23 +6,14 @@ BUILTINS = set(dir(builtins))
 
 
 class DependencyTrackingVisitor(ast.NodeVisitor):
-
-    # must be used only once to visit a tree,
-    # grab the listed dependencies
-    # and discard
-
-    def __init__(self):
-        self.scopes = [set()]
-        self.dependencies = []
-
     @property
     def current_scope(self):
         return self.scopes[-1]
 
     def visit_FunctionDef(self, node):
-        self.current_scope.add(node.name)  # store function name itself
+        self.current_scope.append(node.name)  # store function name itself
         args = node.args
-        argument_names = {
+        argument_names = [
             a.arg
             for arglist in (
                 args.posonlyargs,
@@ -31,7 +22,7 @@ class DependencyTrackingVisitor(ast.NodeVisitor):
                 [a for a in (args.vararg, args.kwarg) if a],
             )
             for a in arglist
-        }
+        ]
         self.scopes.append(argument_names)
         self.generic_visit(node)
         self.scopes.pop()  # restore outer scope
@@ -41,18 +32,19 @@ class DependencyTrackingVisitor(ast.NodeVisitor):
         # after a "del var" an outer "var" declaration does not become visible
         # neither in the current nor in inner scopes
         if isinstance(node.ctx, ast.Store):
-            self.current_scope.add(node.id)
-        elif (
-            isinstance(node.ctx, ast.Load)
-            and node.id not in BUILTINS
-            and node.id not in set.union(*self.scopes)
-            and node.id not in self.dependencies
+            self.current_scope.append(node.id)
+        elif isinstance(node.ctx, ast.Load) and not any(
+            node.id in seen for seen in (BUILTINS, *self.scopes, self.loads,)
         ):
-            self.dependencies.append(node.id)
+            self.loads.append(node.id)
+
+    def scan(self, statement):
+        self.scopes, self.loads = [[]], []
+        tree = ast.parse(statement)
+        self.visit(tree)
+        assert len(self.scopes) == 1
+        return self.current_scope, self.loads
 
 
-def get_dependencies(statement: str) -> List[str]:
-    visitor = DependencyTrackingVisitor()
-    tree = ast.parse(statement)
-    visitor.visit(tree)
-    return visitor.dependencies
+def get_stores_and_loads(statement: str) -> List[str]:
+    return DependencyTrackingVisitor().scan(statement)

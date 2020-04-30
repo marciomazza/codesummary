@@ -3,7 +3,7 @@ from pathlib import Path
 
 import pytest
 
-from ipy import get_dependencies
+from ipy import get_stores_and_loads
 
 RE_EXAMPLE = re.compile(r"(#[^\n]+\n)*# *([\w ]*?) *\| *([\w ]*?) *\n(.+)", re.DOTALL)
 
@@ -28,4 +28,4 @@ def load_examples_stores_loads():
 
 @pytest.mark.parametrize("statement, stores, loads", load_examples_stores_loads())
 def test_get_dependencies(statement, stores, loads):
-    assert get_dependencies(statement) == loads
+    assert get_stores_and_loads(statement) == (stores, loads)

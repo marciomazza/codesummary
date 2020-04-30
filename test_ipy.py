@@ -8,7 +8,7 @@ from ipy import get_dependencies
 RE_EXAMPLE = re.compile(r"(#[^\n]+\n)*# *([\w ]*?) *\| *([\w ]*?) *\n(.+)", re.DOTALL)
 
 
-def load_examples_stores_loads(filename):
+def load_examples_stores_loads():
     """
     load statement examples and their expected stores and loads from example files
 
@@ -20,16 +20,12 @@ def load_examples_stores_loads(filename):
     # <stored variables> | <loaded variables>
 
     """
-    source = Path(filename).read_text()
-    groups = re.split("\n\n\n+", source)[1:]  # skip the header comment
-    examples = [RE_EXAMPLE.match(s).groups() for s in groups]
-    return [
-        (stmt, stores.split(), loads.split()) for _, stores, loads, stmt in examples
-    ]
+    for path in Path("test_examples/").glob("*.py"):
+        for block in re.split("\n\n\n+", path.read_text()):
+            _, stores, loads, stmt = RE_EXAMPLE.match(block).groups()
+            yield (stmt, stores.split(), loads.split())
 
 
-@pytest.mark.parametrize(
-    "statement, stores, loads", load_examples_stores_loads("tests/function_examples.py")
-)
+@pytest.mark.parametrize("statement, stores, loads", load_examples_stores_loads())
 def test_get_dependencies(statement, stores, loads):
     assert get_dependencies(statement) == loads

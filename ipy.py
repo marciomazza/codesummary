@@ -21,7 +21,17 @@ class DependencyTrackingVisitor(ast.NodeVisitor):
 
     def visit_FunctionDef(self, node):
         self.current_scope.add(node.name)  # store function name itself
-        argument_names = {a.arg for a in node.args.args}
+        args = node.args
+        argument_names = {
+            a.arg
+            for arglist in (
+                args.posonlyargs,
+                args.args,
+                args.kwonlyargs,
+                [a for a in (args.vararg, args.kwarg) if a],
+            )
+            for a in arglist
+        }
         self.scopes.append(argument_names)
         self.generic_visit(node)
         self.scopes.pop()  # restore outer scope

@@ -10,6 +10,18 @@ def f(a, b=g(x)):
     ...
 
 
+# positional only var and keyword/default args
+# f |
+def f(p, /, a, *args, b=1, **kwargs):
+    print(p, a, b, args, kwargs)
+
+
+# keyword only args
+# f |
+def f(a, *, b=1):
+    print(a, b)
+
+
 # names bound to parameter (bound in lexical scope) are ignored
 # f | x
 def f(a, b):

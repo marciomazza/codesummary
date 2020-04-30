@@ -5,8 +5,8 @@ def f(a, b=x):
 
 
 # expression in parameter
-# f | g x
-def f(a, b=g(x)):
+# f | g h x y
+def f(a, b=g(h(x + y))):
     ...
 
 

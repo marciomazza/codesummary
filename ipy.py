@@ -10,6 +10,14 @@ class DependencyTrackingVisitor(ast.NodeVisitor):
     def current_scope(self):
         return self.scopes[-1]
 
+    def scan(self, statement):
+        self.scopes, self.loads = [[]], []
+        self.attributes = {}
+        tree = ast.parse(statement)
+        self.visit(tree)
+        assert len(self.scopes) == 1
+        return self.current_scope, self.loads
+
     def visit_FunctionDef(self, node):
         self.current_scope.append(node.name)  # store function name itself
         args = node.args
@@ -59,13 +67,11 @@ class DependencyTrackingVisitor(ast.NodeVisitor):
         self.attributes[node] = name = f"{base}.{node.attr}"
         self.store_or_load(name, node.ctx)
 
-    def scan(self, statement):
-        self.scopes, self.loads = [[]], []
-        self.attributes = {}
-        tree = ast.parse(statement)
-        self.visit(tree)
-        assert len(self.scopes) == 1
-        return self.current_scope, self.loads
+    def visit_Import(self, node):
+        for name in node.names:
+            self.current_scope.append(name.asname or name.name)
+
+    visit_ImportFrom = visit_Import
 
 
 def get_stores_and_loads(statement: str) -> List[str]:

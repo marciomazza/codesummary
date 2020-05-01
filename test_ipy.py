@@ -22,7 +22,7 @@ def load_examples_stores_loads():
 
     """
     for path in Path("test_examples/").glob("*.py"):
-        for block in re.split("\n\n\n+", path.read_text()):
+        for block in re.split(r"\n#*\n#*\n+", path.read_text()):
             _, stores, loads, stmt = RE_EXAMPLE.match(block).groups()
             yield (stmt, stores.split(), loads.split())
 

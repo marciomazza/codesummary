@@ -20,11 +20,6 @@ def f():
     yield a
 
 
-# f | a
-async def f():
-    await a
-
-
 # positional only var and keyword/default args
 # f |
 def f(p, /, a, *args, b=1, **kwargs):

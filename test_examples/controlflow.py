@@ -8,6 +8,11 @@ for a in b:
     ...
 
 
+# a | b
+async for a in b:
+    ...
+
+
 # | a
 while a:
     ...
@@ -15,6 +20,11 @@ while a:
 
 # a b | x y
 with x as a, y as b:
+    ...
+
+
+# a b | x y
+async with x as a, y as b:
     ...
 
 

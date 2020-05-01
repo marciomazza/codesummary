@@ -31,3 +31,15 @@ x = a[1]
 # del in dict
 # a | a
 del a[1]
+
+
+# a |
+a += 1
+
+
+# a | b
+a &= b
+
+
+# a | b
+(a := b)

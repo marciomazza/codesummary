@@ -1,5 +1,6 @@
 import ast
 import builtins
+from contextlib import contextmanager
 from typing import List
 
 BUILTINS = set(dir(builtins))
@@ -18,6 +19,12 @@ class DependencyTrackingVisitor(ast.NodeVisitor):
         assert len(self.scopes) == 1
         return self.current_scope, self.loads
 
+    @contextmanager
+    def new_scope(self, names=None):
+        self.scopes.append(names or [])
+        yield
+        self.scopes.pop()
+
     def visit_FunctionDef(self, node):
         self.current_scope.append(node.name)  # store function name itself
         args = node.args
@@ -31,9 +38,8 @@ class DependencyTrackingVisitor(ast.NodeVisitor):
             )
             for a in arglist
         ]
-        self.scopes.append(argument_names)
-        self.generic_visit(node)
-        self.scopes.pop()  # restore outer scope
+        with self.new_scope(argument_names):
+            self.generic_visit(node)
 
     def store(self, name, ctx):
         if isinstance(ctx, (ast.Store, ast.Del)):
@@ -72,6 +78,20 @@ class DependencyTrackingVisitor(ast.NodeVisitor):
             self.current_scope.append(name.asname or name.name)
 
     visit_ImportFrom = visit_Import
+
+    def visit_ListComp(self, node):
+        with self.new_scope():
+            # first visit the generators ("for ... ") to store vars in the current scope
+            for gen in node.generators:
+                self.visit(gen)
+            # visit remaining fields
+            for name, field in ast.iter_fields(node):
+                if name != "generators":
+                    self.visit(field)
+
+    visit_SetComp = visit_ListComp
+    visit_GeneratorExp = visit_ListComp
+    visit_DictComp = visit_ListComp
 
 
 def get_stores_and_loads(statement: str) -> List[str]:

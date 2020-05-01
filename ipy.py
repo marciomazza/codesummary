@@ -41,6 +41,8 @@ class DependencyTrackingVisitor(ast.NodeVisitor):
         with self.new_scope(argument_names):
             self.generic_visit(node)
 
+    visit_AsyncFunctionDef = visit_FunctionDef
+
     def store(self, name, ctx):
         if isinstance(ctx, (ast.Store, ast.Del)):
             self.current_scope.append(name)

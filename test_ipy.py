@@ -24,7 +24,12 @@ def load_examples_stores_loads():
     for path in Path("test_examples/").glob("*.py"):
         for block in re.split(r"\n#*\n#*\n+", path.read_text()):
             _, stores, loads, stmt = RE_EXAMPLE.match(block).groups()
-            yield (stmt, stores.split(), loads.split())
+            stores, loads = [l.split() for l in (stores, loads)]
+            yield (stmt, stores, loads)
+            if stmt.startswith("def "):
+                # reuse function examples as async
+                stmt = stmt.replace("def ", "async def ")
+                yield (stmt, stores, loads)
 
 
 @pytest.mark.parametrize("statement, stores, loads", load_examples_stores_loads())

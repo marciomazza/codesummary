@@ -43,3 +43,7 @@ a &= b
 
 # a | b
 (a := b)
+
+
+# | a
+await a

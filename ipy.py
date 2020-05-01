@@ -34,21 +34,34 @@ class DependencyTrackingVisitor(ast.NodeVisitor):
         else:
             return False
 
-    def visit_Name(self, node):
-        if self.store(node.id, node.ctx):
+    def store_or_load(self, name, ctx):
+        if self.store(name, ctx):
             ...  # done
-        elif isinstance(node.ctx, ast.Load) and not any(
-            node.id in seen for seen in (BUILTINS, *self.scopes, self.loads,)
+        elif isinstance(ctx, ast.Load) and not any(
+            name in seen for seen in (BUILTINS, *self.scopes, self.loads,)
         ):
-            self.loads.append(node.id)
+            self.loads.append(name)
+
+    def visit_Name(self, node):
+        self.store_or_load(node.id, node.ctx)
 
     def visit_Subscript(self, node):
         self.generic_visit(node)
         if isinstance(node.value, ast.Name):
             self.store(node.value.id, node.ctx)
 
+    def visit_Attribute(self, node):
+        self.generic_visit(node)
+        if isinstance(node.value, ast.Name):
+            base = node.value.id
+        elif isinstance(node.value, ast.Attribute):
+            base = self.attributes[node.value]
+        self.attributes[node] = name = f"{base}.{node.attr}"
+        self.store_or_load(name, node.ctx)
+
     def scan(self, statement):
         self.scopes, self.loads = [[]], []
+        self.attributes = {}
         tree = ast.parse(statement)
         self.visit(tree)
         assert len(self.scopes) == 1

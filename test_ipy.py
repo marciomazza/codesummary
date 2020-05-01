@@ -5,7 +5,8 @@ import pytest
 
 from ipy import get_stores_and_loads
 
-RE_EXAMPLE = re.compile(r"(#[^\n]+\n)*# *([\w ]*?) *\| *([\w ]*?) *\n(.+)", re.DOTALL)
+ID = r"([\.\w ]*?)"
+RE_EXAMPLE = re.compile(fr"(#[^\n]+\n)*# *{ID} *\| *{ID} *\n(.+)", re.DOTALL)
 
 
 def load_examples_stores_loads():

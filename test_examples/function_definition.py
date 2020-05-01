@@ -47,7 +47,7 @@ def f():
     print(len([1, 2, 3]))
 
 
-# f | re
+# f | re re.match
 def f(a):
     re.match(".", a)
 

@@ -43,6 +43,10 @@ class DependencyTrackingVisitor(ast.NodeVisitor):
 
     visit_AsyncFunctionDef = visit_FunctionDef
 
+    def visit_Global(self, node):
+        for name in node.names:
+            self.loads.append(name)
+
     def store(self, name, ctx):
         if isinstance(ctx, (ast.Store, ast.Del)):
             self.current_scope.append(name)

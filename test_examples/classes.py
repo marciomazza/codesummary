@@ -22,3 +22,13 @@ class A:
 class A(B, C, D):
     x = y + 1
     z = (x, x)
+
+
+# decorators
+# A A.f | b c d
+@b
+@c(d)
+class A:
+    @property
+    def f(self):
+        ...

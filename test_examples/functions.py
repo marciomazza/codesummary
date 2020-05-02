@@ -94,3 +94,18 @@ def f():
 
     g()
     h()
+
+
+# decorators
+# f | a
+@a
+def f():
+    ...
+
+
+# f | a b c d e
+@a(b, x=c)
+@d
+@e
+def f():
+    ...

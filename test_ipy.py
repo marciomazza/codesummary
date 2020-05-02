@@ -19,7 +19,7 @@ def load_example_sources():
     for path in Path(EXAMPLES_DIR).glob("*.py"):
         yield path.read_text()
     # reuse function examples as coroutines
-    yield source_replace(f"{EXAMPLES_DIR}/function_definition.py", "def ", "async def ")
+    yield source_replace(f"{EXAMPLES_DIR}/functions.py", "def ", "async def ")
     # reuse comprehension examples as async comprehensions
     yield source_replace(f"{EXAMPLES_DIR}/comprehensions.py", " for ", " async for ")
 

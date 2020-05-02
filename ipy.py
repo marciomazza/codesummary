@@ -1,7 +1,7 @@
 import ast
 import builtins
 from contextlib import contextmanager
-from typing import List
+from typing import List, Tuple
 
 BUILTINS = set(dir(builtins))
 
@@ -19,29 +19,11 @@ class DependencyTrackingVisitor(ast.NodeVisitor):
         assert len(self.scopes) == 1
         return self.current_scope, self.loads
 
-    @contextmanager
-    def new_scope(self, names=None):
-        self.scopes.append(names or [])
-        yield
-        self.scopes.pop()
+    def visit_Import(self, node):
+        for name in node.names:
+            self.current_scope.append(name.asname or name.name)
 
-    def visit_FunctionDef(self, node):
-        self.current_scope.append(node.name)  # store function name itself
-        args = node.args
-        argument_names = [
-            a.arg
-            for arglist in (
-                args.posonlyargs,
-                args.args,
-                args.kwonlyargs,
-                [a for a in (args.vararg, args.kwarg) if a],
-            )
-            for a in arglist
-        ]
-        with self.new_scope(argument_names):
-            self.generic_visit(node)
-
-    visit_AsyncFunctionDef = visit_FunctionDef
+    visit_ImportFrom = visit_Import
 
     def visit_Global(self, node):
         for name in node.names:
@@ -65,11 +47,6 @@ class DependencyTrackingVisitor(ast.NodeVisitor):
     def visit_Name(self, node):
         self.store_or_load(node.id, node.ctx)
 
-    def visit_Subscript(self, node):
-        self.generic_visit(node)
-        if isinstance(node.value, ast.Name):
-            self.store(node.value.id, node.ctx)
-
     def visit_Attribute(self, node):
         self.generic_visit(node)
         if isinstance(node.value, ast.Name):
@@ -79,11 +56,16 @@ class DependencyTrackingVisitor(ast.NodeVisitor):
         self.attributes[node] = name = f"{base}.{node.attr}"
         self.store_or_load(name, node.ctx)
 
-    def visit_Import(self, node):
-        for name in node.names:
-            self.current_scope.append(name.asname or name.name)
+    def visit_Subscript(self, node):
+        self.generic_visit(node)
+        if isinstance(node.value, ast.Name):
+            self.store(node.value.id, node.ctx)
 
-    visit_ImportFrom = visit_Import
+    @contextmanager
+    def new_scope(self, names=None):
+        self.scopes.append(names or [])
+        yield self.scopes[-1]  # current scope
+        self.scopes.pop()
 
     def visit_ListComp(self, node):
         with self.new_scope():
@@ -99,6 +81,24 @@ class DependencyTrackingVisitor(ast.NodeVisitor):
     visit_GeneratorExp = visit_ListComp
     visit_DictComp = visit_ListComp
 
+    def visit_FunctionDef(self, node):
+        self.current_scope.append(node.name)  # store function name
+        args = node.args
+        argument_names = [
+            a.arg
+            for arglist in (
+                args.posonlyargs,
+                args.args,
+                args.kwonlyargs,
+                [a for a in (args.vararg, args.kwarg) if a],
+            )
+            for a in arglist
+        ]
+        with self.new_scope(argument_names):
+            self.generic_visit(node)
 
-def get_stores_and_loads(statement: str) -> List[str]:
+    visit_AsyncFunctionDef = visit_FunctionDef
+
+
+def get_stores_and_loads(statement: str) -> Tuple[List[str], List[str]]:
     return DependencyTrackingVisitor().scan(statement)

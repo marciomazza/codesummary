@@ -6,7 +6,7 @@ import pytest
 from ipy import get_stores_and_loads
 
 ID = r"([\.\w ]*?)"
-RE_EXAMPLE = re.compile(fr"(#[^\n]+\n)*# *{ID} *\| *{ID} *\n(.+)", re.DOTALL)
+RE_EXAMPLE = re.compile(fr"(#[^\n]*\n)*# *{ID} *\| *{ID} *\n(.+)", re.DOTALL)
 EXAMPLES_DIR = "test_examples"
 
 

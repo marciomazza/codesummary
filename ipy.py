@@ -99,6 +99,13 @@ class DependencyTrackingVisitor(ast.NodeVisitor):
 
     visit_AsyncFunctionDef = visit_FunctionDef
 
+    def visit_ClassDef(self, node):
+        class_name = node.name
+        self.current_scope.append(class_name)
+        with self.new_scope() as class_scope:
+            self.generic_visit(node)
+        self.current_scope.extend(f"{class_name}.{name}" for name in class_scope)
+
 
 def get_stores_and_loads(statement: str) -> Tuple[List[str], List[str]]:
     return DependencyTrackingVisitor().scan(statement)

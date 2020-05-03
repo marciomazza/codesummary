@@ -25,10 +25,10 @@ class A(B, C, D):
 
 
 # decorators
-# A A.f | b c d
+# A A.f | b c d x y
 @b
 @c(d)
 class A:
-    @property
+    @x
     def f(self):
-        ...
+        return y

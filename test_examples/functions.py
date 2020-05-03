@@ -97,15 +97,15 @@ def f():
 
 
 # decorators
-# f | a
+# f | a b
 @a
 def f():
-    ...
+    return b
 
 
-# f | a b c d e
+# f | a b c d e y
 @a(b, x=c)
 @d
 @e
 def f():
-    ...
+    return y

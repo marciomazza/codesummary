@@ -1,9 +1,22 @@
 import ast
 import builtins
 from contextlib import contextmanager
+from functools import wraps
 from typing import List, Tuple
 
 BUILTINS = set(dir(builtins))
+
+
+def with_decorators_first(visit):
+    @wraps(visit)
+    def swap_decorator_list_and_body(self, node):
+        fields = list(node._fields)
+        i, j = [fields.index(f) for f in ("body", "decorator_list")]
+        fields[i], fields[j] = fields[j], fields[i]
+        node._fields = tuple(fields)
+        return visit(self, node)
+
+    return swap_decorator_list_and_body
 
 
 class DependencyTrackingVisitor(ast.NodeVisitor):
@@ -94,6 +107,7 @@ class DependencyTrackingVisitor(ast.NodeVisitor):
     visit_GeneratorExp = visit_ListComp
     visit_DictComp = visit_ListComp
 
+    @with_decorators_first
     def visit_FunctionDef(self, node):
         self.current_scope.append(node.name)  # store function name
         args = node.args
@@ -112,6 +126,7 @@ class DependencyTrackingVisitor(ast.NodeVisitor):
 
     visit_AsyncFunctionDef = visit_FunctionDef
 
+    @with_decorators_first
     def visit_ClassDef(self, node):
         class_name = node.name
         self.current_scope.append(class_name)

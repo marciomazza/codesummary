@@ -141,3 +141,28 @@ class DependencyTrackingVisitor(ast.NodeVisitor):
 
 def get_stores_and_loads(statement: str) -> Tuple[List[str], List[str]]:
     return DependencyTrackingVisitor().scan(statement)
+
+
+def build_dependency_tree(statements):
+    current, deps = {}, {}
+    for stmt in statements:
+        stores, loads = get_stores_and_loads(stmt)
+        node_deps = [current[v] for v in loads if v in current]
+        if node_deps:
+            deps[stmt] = node_deps
+        for store in stores:
+            current[store] = stmt
+    return deps
+
+
+def chain_dependencies(stmt, deps):
+    if stmt in deps:
+        for dep in deps[stmt]:
+            yield from chain_dependencies(dep, deps)
+    yield stmt
+
+
+def summarize(statements):
+    deps = build_dependency_tree(statements)
+    last = statements[-1]
+    return list(chain_dependencies(last, deps))

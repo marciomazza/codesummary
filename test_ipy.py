@@ -1,15 +1,17 @@
+import ast
 import builtins
 import re
 import string
+from itertools import groupby
 from pathlib import Path
 
 import pytest
 
-from ipy import get_stores_and_loads
+from ipy import get_stores_and_loads, summarize
 
 ID = r"([\.\w ]*?)"
 RE_EXAMPLE = re.compile(fr"(#[^\n]*\n)*# *{ID} *\| *{ID} *\n(.+)", re.DOTALL)
-EXAMPLES_DIR = "test_examples"
+EXAMPLES_DIR = "test_examples/statements"
 
 
 def source_replace(filename, old, new):
@@ -66,5 +68,28 @@ def load_examples_stores_loads():
 
 
 @pytest.mark.parametrize("statement, stores, loads", load_examples_stores_loads())
-def test_get_dependencies(statement, stores, loads):
+def test_get_stores_and_loads(statement, stores, loads):
     assert get_stores_and_loads(statement) == (stores, loads)
+
+
+def load_chain_examples():
+    # TODO create many examples
+    source = Path("test_examples/chains/a.py").read_text()
+    lines = source.splitlines()
+    nodes = ast.parse(source).body
+    statements = ["\n".join(lines[n.lineno - 1 : n.end_lineno]) for n in nodes]
+    original_statements, _, final_statements = [
+        list(g) for _, g in groupby(statements, lambda s: s.startswith("___"))
+    ]
+    yield original_statements, final_statements
+
+
+def dump(node):
+    if isinstance(node, list):
+        node = ast.Module(body=node)
+    return ast.dump(node).strip()
+
+
+@pytest.mark.parametrize("original_statements, final_statements", load_chain_examples())
+def test_summarize(original_statements, final_statements):
+    assert dump(final_statements) == dump(summarize(original_statements))

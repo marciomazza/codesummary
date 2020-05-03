@@ -6,8 +6,18 @@ a = 1
 a = b
 
 
+# unpacking
+# a b | x
+a, b = x
+
+
 # a b | x y
 a, b = x, y
+
+
+# multiple assigment
+# a b c | x
+a = b = c = x
 
 
 # a | f x y

@@ -6,7 +6,7 @@ class A:
 # A A.m | B x
 class A(B):
     def m():
-        print(x)
+        return x
 
 
 # A A.x A.B A.B.C A.B.C.y |

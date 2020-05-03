@@ -1,10 +1,7 @@
 import ast
-import builtins
 from contextlib import contextmanager
 from functools import wraps
 from typing import List, Tuple
-
-BUILTINS = set(dir(builtins))
 
 
 def with_decorators_first(visit):
@@ -50,7 +47,7 @@ class DependencyTrackingVisitor(ast.NodeVisitor):
             return False
 
     def load(self, name):
-        if not any(name in seen for seen in (BUILTINS, *self.scopes, self.loads,)):
+        if not any(name in seen for seen in (*self.scopes, self.loads,)):
             self.loads.append(name)
 
     def store_or_load(self, name, ctx):

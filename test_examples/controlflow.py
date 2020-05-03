@@ -29,7 +29,7 @@ async with x as a, y as b:
 
 
 # name "e" is local to the exception block
-# |
+# | Exception
 try:
     ...
 except Exception as e:

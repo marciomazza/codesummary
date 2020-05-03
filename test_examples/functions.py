@@ -23,13 +23,13 @@ def f():
 # positional only var and keyword/default args
 # f |
 def f(p, /, a, *args, b=1, **kwargs):
-    print(p, a, b, args, kwargs)
+    return (p, a, b, args, kwargs)
 
 
 # keyword only args
 # f |
 def f(a, *, b=1):
-    print(a, b)
+    return (a, b)
 
 
 # names bound to parameter (bound in lexical scope) are ignored
@@ -41,20 +41,14 @@ def f(a, b):
 # no repetitions
 # f | x y
 def f():
-    print(x, y)
-    print(x)
+    yield (x, y)
+    yield (x)
     y = x + y
 
 
 # f | g
 def f(a, b):
     c = g(a, b)
-
-
-# builtins are ignored
-# f |
-def f():
-    print(len([1, 2, 3]))
 
 
 # f | re re.match
@@ -66,7 +60,7 @@ def f(a):
 # f | a b
 def f():
     x = a + b
-    print(x)
+    return x
 
 
 # free variable outside inner scope
@@ -83,7 +77,7 @@ def f(x):
     w = x + a
 
     def g(y, z):
-        print(a, b, c, x, y, z)
+        return (a, b, c, x, y, z)
 
 
 # function referenced after defined

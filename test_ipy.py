@@ -1,4 +1,6 @@
+import builtins
 import re
+import string
 from pathlib import Path
 
 import pytest
@@ -24,6 +26,20 @@ def load_example_sources():
     yield source_replace(f"{EXAMPLES_DIR}/comprehensions.py", " for ", " async for ")
 
 
+RE_ONE_LETTER_NAME = re.compile(r"\b[a-zA-Z]\b")
+LETTERS_TO_BUILTINS = dict(
+    zip(
+        string.ascii_letters, [b for b in dir(builtins) if b.isalpha() and b.islower()],
+    )
+)
+
+
+def replace_names_with_builtins(source):
+    return RE_ONE_LETTER_NAME.sub(
+        lambda match: LETTERS_TO_BUILTINS[match.group()], source
+    )
+
+
 def load_examples_stores_loads():
     """
     load statement examples and their expected stores and loads from example files
@@ -37,7 +53,14 @@ def load_examples_stores_loads():
 
     """
     for source in load_example_sources():
-        for block in re.split(r"\n#*\n#*\n+", source):
+        blocks = re.split(r"\n#*\n#*\n+", source)
+        # replace names by builtins in some examples
+        # to test that they can be used as normal identifiers
+        #
+        # (* take some examples from the end just because they're more complex)
+        blocks += [replace_names_with_builtins(b) for b in blocks[-3:]]
+
+        for block in blocks:
             _, stores, loads, stmt = RE_EXAMPLE.match(block).groups()
             yield (stmt, stores.split(), loads.split())
 

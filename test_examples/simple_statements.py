@@ -33,12 +33,17 @@ x = a[1]
 del a[1]
 
 
-# a |
+# an augmented assignment also depends on the variable
+# a | a
 a += 1
 
 
-# a | b
+# a | a b
 a &= b
+
+
+# a | a
+a[1] *= 2
 
 
 # a | b

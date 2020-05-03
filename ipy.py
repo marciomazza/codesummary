@@ -36,13 +36,12 @@ class DependencyTrackingVisitor(ast.NodeVisitor):
         else:
             return False
 
-    def store_or_load(self, name, ctx):
-        if self.store(name, ctx):
-            ...  # done
-        elif isinstance(ctx, ast.Load) and not any(
-            name in seen for seen in (BUILTINS, *self.scopes, self.loads,)
-        ):
+    def load(self, name):
+        if not any(name in seen for seen in (BUILTINS, *self.scopes, self.loads,)):
             self.loads.append(name)
+
+    def store_or_load(self, name, ctx):
+        self.store(name, ctx) or (isinstance(ctx, ast.Load) and self.load(name))
 
     def visit_Name(self, node):
         self.store_or_load(node.id, node.ctx)
@@ -60,6 +59,20 @@ class DependencyTrackingVisitor(ast.NodeVisitor):
         self.generic_visit(node)
         if isinstance(node.value, ast.Name):
             self.store(node.value.id, node.ctx)
+
+    def visit_AugAssign(self, node):
+        # visit the left side
+        self.visit(node.target)
+        # the left side is the last stored variable in the current scope
+        # and is generally also a dependency of the augmented assignment
+        #
+        # to emulated that variable load before store, we:
+        # remove it from the scope, try to load it and then store it back again
+        var = self.current_scope.pop()
+        self.load(var)
+        self.current_scope.append(var)
+        # visit the right side
+        self.visit(node.value)
 
     @contextmanager
     def new_scope(self, names=None):

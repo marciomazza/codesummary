@@ -70,6 +70,13 @@ class DependencyTrackingVisitor(ast.NodeVisitor):
         if isinstance(node.value, ast.Name):
             self.store(node.value.id, node.ctx)
 
+    def visit_Assign(self, node):
+        # visit right side before left
+        # so, when the same var appears on both sides, it is both loaded and stored
+        self.visit(node.value)
+        for target in node.targets:
+            self.visit(target)
+
     def visit_AugAssign(self, node):
         # visit the left side
         self.visit(node.target)

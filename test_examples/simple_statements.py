@@ -15,9 +15,23 @@ a, b = x
 a, b = x, y
 
 
-# multiple assigment
+# multiple assignment
 # a b c | x
 a = b = c = x
+
+
+# assignment depending on itself
+# a | a
+a = a + 1
+
+
+# an augmented assignment also depends on the assigned variable
+# a | a
+a += 1
+
+
+# a | a b
+a &= b
 
 
 # a | f x y
@@ -41,15 +55,6 @@ x = a[1]
 # del in dict
 # a | a
 del a[1]
-
-
-# an augmented assignment also depends on the variable
-# a | a
-a += 1
-
-
-# a | a b
-a &= b
 
 
 # a | a

@@ -16,10 +16,22 @@ def with_decorators_first(visit):
     return swap_decorator_list_and_body
 
 
+def list_fields_except(node, field_name):
+    return [field for name, field in ast.iter_fields(node) if name != field_name]
+
+
 class DependencyTrackingVisitor(ast.NodeVisitor):
     @property
     def current_scope(self):
         return self.scopes[-1]
+
+    def visit(self, node):
+        # simplify to transparently visit lists
+        if isinstance(node, list):
+            for item in node:
+                self.visit(item)
+        elif isinstance(node, ast.AST):
+            super().visit(node)
 
     def scan(self, statement):
         self.scopes, self.loads = [[]], []
@@ -76,8 +88,7 @@ class DependencyTrackingVisitor(ast.NodeVisitor):
         # visit right side before left
         # so, when the same var appears on both sides, it is both loaded and stored
         self.visit(node.value)
-        for target in node.targets:
-            self.visit(target)
+        self.visit(node.targets)
 
     def visit_AugAssign(self, node):
         # visit the left side
@@ -102,12 +113,9 @@ class DependencyTrackingVisitor(ast.NodeVisitor):
     def visit_ListComp(self, node):
         with self.new_scope():
             # first visit the generators ("for ... ") to store vars in the current scope
-            for gen in node.generators:
-                self.visit(gen)
+            self.visit(node.generators)
             # visit remaining fields
-            for name, field in ast.iter_fields(node):
-                if name != "generators":
-                    self.visit(field)
+            self.visit(list_fields_except(node, "generators"))
 
     visit_SetComp = visit_ListComp
     visit_GeneratorExp = visit_ListComp

@@ -1,19 +1,6 @@
 import ast
 from contextlib import contextmanager
-from functools import wraps
 from typing import List, Tuple
-
-
-def with_decorators_first(visit):
-    @wraps(visit)
-    def swap_decorator_list_and_body(self, node):
-        fields = list(node._fields)
-        i, j = [fields.index(f) for f in ("body", "decorator_list")]
-        fields[i], fields[j] = fields[j], fields[i]
-        node._fields = tuple(fields)
-        return visit(self, node)
-
-    return swap_decorator_list_and_body
 
 
 def list_fields_except(node, field_name):
@@ -119,9 +106,12 @@ class DependencyTrackingVisitor(ast.NodeVisitor):
     visit_GeneratorExp = visit_ListComp
     visit_DictComp = visit_ListComp
 
-    @with_decorators_first
     def visit_FunctionDef(self, node):
-        self.store(node.name)  # store function name
+        # visit decorators outside the function scope
+        self.visit(node.decorator_list)
+        # store function name
+        self.store(node.name)
+        # visit the rest
         args = node.args
         argument_names = [
             a.arg
@@ -134,17 +124,22 @@ class DependencyTrackingVisitor(ast.NodeVisitor):
             for a in arglist
         ]
         with self.new_scope(argument_names):
-            self.generic_visit(node)
+            self.visit(list_fields_except(node, "decorator_list"))
 
     visit_AsyncFunctionDef = visit_FunctionDef
 
-    @with_decorators_first
     def visit_ClassDef(self, node):
+        # visit decorators outside the function scope
+        self.visit(node.decorator_list)
+        # store class name
         class_name = node.name
         self.store(class_name)
+        # visit the rest
         with self.new_scope() as class_scope:
-            self.generic_visit(node)
-        self.current_scope.extend(f"{class_name}.{name}" for name in class_scope)
+            self.visit(list_fields_except(node, "decorator_list"))
+        # store names defined on the class scope
+        for name in class_scope:
+            self.store(f"{class_name}.{name}")
 
 
 def get_stores_and_loads(statement: str) -> Tuple[List[str], List[str]]:

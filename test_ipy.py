@@ -9,23 +9,24 @@ import pytest
 
 from ipy import get_stores_and_loads, summarize
 
-ID = r"([\.\w ]*?)"
-RE_EXAMPLE = re.compile(fr"(#[^\n]*\n)*# *{ID} *\| *{ID} *\n(.+)", re.DOTALL)
-EXAMPLES_DIR = "test_examples/statements"
-
 
 def source_replace(filename, old, new):
     source = Path(filename).read_text()
     return source.replace(old, new)
 
 
-def load_example_sources():
-    for path in Path(EXAMPLES_DIR).glob("*.py"):
+def load_python_sources(base_dir):
+    for path in sorted(Path(base_dir).glob("*.py")):
         yield path.read_text()
+
+
+def load_examples_stores_loads_sources():
+    base_dir = "test_examples/statements"
+    yield from load_python_sources(base_dir)
     # reuse function examples as coroutines
-    yield source_replace(f"{EXAMPLES_DIR}/functions.py", "def ", "async def ")
+    yield source_replace(f"{base_dir}/functions.py", "def ", "async def ")
     # reuse comprehension examples as async comprehensions
-    yield source_replace(f"{EXAMPLES_DIR}/comprehensions.py", " for ", " async for ")
+    yield source_replace(f"{base_dir}/comprehensions.py", " for ", " async for ")
 
 
 RE_ONE_LETTER_NAME = re.compile(r"\b[a-zA-Z]\b")
@@ -42,6 +43,10 @@ def replace_names_with_builtins(source):
     )
 
 
+ID = r"([\.\w ]*?)"
+RE_EXAMPLE = re.compile(fr"(#[^\n]*\n)*# *{ID} *\| *{ID} *\n(.+)", re.DOTALL)
+
+
 def load_examples_stores_loads():
     """
     load statement examples and their expected stores and loads from example files
@@ -54,7 +59,7 @@ def load_examples_stores_loads():
     # <stored variables> | <loaded variables>
 
     """
-    for source in load_example_sources():
+    for source in load_examples_stores_loads_sources():
         blocks = re.split(r"\n#*\n#*\n+", source)
         # replace names by builtins in some examples
         # to test that they can be used as normal identifiers
@@ -73,23 +78,16 @@ def test_get_stores_and_loads(statement, stores, loads):
 
 
 def load_chain_examples():
-    # TODO create many examples
-    source = Path("test_examples/chains/a.py").read_text()
-    lines = source.splitlines()
-    nodes = ast.parse(source).body
-    statements = ["\n".join(lines[n.lineno - 1 : n.end_lineno]) for n in nodes]
-    original_statements, _, final_statements = [
-        list(g) for _, g in groupby(statements, lambda s: s.startswith("___"))
-    ]
-    yield original_statements, final_statements
-
-
-def dump(node):
-    if isinstance(node, list):
-        node = ast.Module(body=node)
-    return ast.dump(node).strip()
+    for source in load_python_sources("test_examples/chains"):
+        lines = source.splitlines()
+        nodes = ast.parse(source).body
+        statements = ["\n".join(lines[n.lineno - 1 : n.end_lineno]) for n in nodes]
+        original_statements, _, final_statements = [
+            list(g) for _, g in groupby(statements, lambda s: s.startswith("___"))
+        ]
+        yield original_statements, final_statements
 
 
 @pytest.mark.parametrize("original_statements, final_statements", load_chain_examples())
 def test_summarize(original_statements, final_statements):
-    assert dump(final_statements) == dump(summarize(original_statements))
+    assert final_statements == summarize(original_statements)

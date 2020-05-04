@@ -97,7 +97,8 @@ def f():
     return b
 
 
-# f | a b c d e y
+# b and c can be altered by a => store them
+# b c f | a b c d e y
 @a(b, x=c)
 @d
 @e

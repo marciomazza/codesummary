@@ -25,9 +25,29 @@ class A(B, C, D):
 
 
 # decorators
-# A A.f | b c d x y
+#
+# A A.f | b x y
 @b
-@c(d)
+class A:
+    @x
+    def f(self):
+        return y
+
+
+# w can be altered by b => store it
+#
+# w A A.f | b w x y
+@b(w)
+class A:
+    @x
+    def f(self):
+        return y
+
+
+# w A A.f | a b c w x y
+@a
+@b
+@c(w)
 class A:
     @x
     def f(self):

@@ -141,6 +141,24 @@ class DependencyTrackingVisitor(ast.NodeVisitor):
         for name in class_scope:
             self.store(f"{class_name}.{name}")
 
+    def visit_Call(self, node):
+        self.generic_visit(node)
+
+        # if this is a method call store the base object
+        # because a method call potentially alters it
+        # obj.f(...) => store obj
+        func = node.func
+        if isinstance(func, ast.Attribute) and func in self.attributes:
+            obj, _ = self.attributes[func].rsplit(".", 1)
+            self.store(obj)
+
+        # store arguments, because a function call potentially alters them
+        # ex.: f(a, x=b) => store a and b
+        for attr in (*node.args, *(k.value for k in node.keywords)):
+            name = self.attributes.get(attr, None)
+            if name:
+                self.store(name)
+
 
 def get_stores_and_loads(statement: str) -> Tuple[List[str], List[str]]:
     return DependencyTrackingVisitor().scan(statement)

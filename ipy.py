@@ -60,8 +60,10 @@ class DependencyTrackingVisitor(ast.NodeVisitor):
         self.generic_visit(node)
         if isinstance(node.value, ast.Name):
             base = node.value.id
-        elif isinstance(node.value, ast.Attribute):
-            base = self.attributes[node.value]
+        else:
+            base = self.attributes.get(node.value, None)
+        if not base:
+            return
         self.attributes[node] = name = f"{base}.{node.attr}"
         self.store_or_load(name, node.ctx)
 

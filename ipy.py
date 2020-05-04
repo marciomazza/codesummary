@@ -31,7 +31,7 @@ class DependencyTrackingVisitor(ast.NodeVisitor):
 
     def visit_Import(self, node):
         for name in node.names:
-            self.current_scope.append(name.asname or name.name)
+            self.store(name.asname or name.name)
 
     visit_ImportFrom = visit_Import
 
@@ -39,7 +39,7 @@ class DependencyTrackingVisitor(ast.NodeVisitor):
         for name in node.names:
             self.loads.append(name)
 
-    def store(self, name, ctx):
+    def store(self, name, ctx=ast.Store()):
         if isinstance(ctx, (ast.Store, ast.Del)):
             self.current_scope.append(name)
             return True
@@ -89,7 +89,7 @@ class DependencyTrackingVisitor(ast.NodeVisitor):
         # remove it from the scope, try to load it and then store it back again
         var = self.current_scope.pop()
         self.load(var)
-        self.current_scope.append(var)
+        self.store(var)
         # visit the right side
         self.visit(node.value)
 
@@ -115,7 +115,7 @@ class DependencyTrackingVisitor(ast.NodeVisitor):
 
     @with_decorators_first
     def visit_FunctionDef(self, node):
-        self.current_scope.append(node.name)  # store function name
+        self.store(node.name)  # store function name
         args = node.args
         argument_names = [
             a.arg
@@ -135,7 +135,7 @@ class DependencyTrackingVisitor(ast.NodeVisitor):
     @with_decorators_first
     def visit_ClassDef(self, node):
         class_name = node.name
-        self.current_scope.append(class_name)
+        self.store(class_name)
         with self.new_scope() as class_scope:
             self.generic_visit(node)
         self.current_scope.extend(f"{class_name}.{name}" for name in class_scope)

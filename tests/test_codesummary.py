@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 
-from ipy import get_stores_and_loads, summarize
+from codesummary import get_stores_and_loads, summarize
 
 
 def source_replace(filename, old, new):
@@ -20,8 +20,11 @@ def load_python_sources(base_dir):
         yield path.read_text()
 
 
+EXAMPLE_DIR = "tests/examples"
+
+
 def load_examples_stores_loads_sources():
-    base_dir = "test_examples/statements"
+    base_dir = f"{EXAMPLE_DIR}/statements"
     yield from load_python_sources(base_dir)
     # reuse function examples as coroutines
     yield source_replace(f"{base_dir}/functions.py", "def ", "async def ")
@@ -78,7 +81,7 @@ def test_get_stores_and_loads(statement, stores, loads):
 
 
 def load_chain_examples():
-    for source in load_python_sources("test_examples/chains"):
+    for source in load_python_sources(f"{EXAMPLE_DIR}/chains"):
         lines = source.splitlines()
         nodes = ast.parse(source).body
         statements = ["\n".join(lines[n.lineno - 1 : n.end_lineno]) for n in nodes]

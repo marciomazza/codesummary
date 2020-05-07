@@ -8,6 +8,7 @@ from pathlib import Path
 import pytest
 
 from codesummary import get_stores_and_loads, summarize
+from codesummary.codesummary import PY_VERSION
 
 
 def source_replace(filename, old, new):
@@ -48,6 +49,7 @@ def replace_names_with_builtins(source):
 
 ID = r"([\.\w ]*?)"
 RE_EXAMPLE = re.compile(fr"(#[^\n]*\n)*# *{ID} *\| *{ID} *\n(.+)", re.DOTALL)
+RE_POSONLY_ARGS = re.compile(r".*def *.* */, *.*")
 
 
 def load_examples_stores_loads():
@@ -72,6 +74,13 @@ def load_examples_stores_loads():
 
         for block in blocks:
             _, stores, loads, stmt = RE_EXAMPLE.match(block).groups()
+
+            # skip some stuff for python versions before 3.8:
+            #   - positional only args in function def
+            #   - walrus operator
+            if PY_VERSION < (3, 8) and (RE_POSONLY_ARGS.match(stmt) or " := " in stmt):
+                continue
+
             yield (stmt, stores.split(), loads.split())
 
 
@@ -82,9 +91,13 @@ def test_get_stores_and_loads(statement, stores, loads):
 
 def load_chain_examples():
     for source in load_python_sources(f"{EXAMPLE_DIR}/chains"):
-        lines = source.splitlines()
-        nodes = ast.parse(source).body
-        statements = ["\n".join(lines[n.lineno - 1 : n.end_lineno]) for n in nodes]
+        # lines stripping out comments
+        lines = [l for l in source.splitlines() if not l.startswith("# ")]
+        nodes = ast.parse("\n".join(lines)).body
+        starts = [n.lineno - 1 for n in nodes] + [len(lines)]
+        statements = [
+            "\n".join(lines[ini:end]).strip() for ini, end in zip(starts, starts[1:])
+        ]
         original_statements, _, final_statements = [
             list(g) for _, g in groupby(statements, lambda s: s.startswith("___"))
         ]

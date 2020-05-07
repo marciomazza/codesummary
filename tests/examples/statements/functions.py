@@ -20,10 +20,16 @@ def f():
     yield a
 
 
-# positional only var and keyword/default args
+# var and keyword/default args
 # f |
-def f(p, /, a, *args, b=1, **kwargs):
+def f(p, a, *args, b=1, **kwargs):
     return (p, a, b, args, kwargs)
+
+
+# positional only args (python 3.8)
+# f |
+def f(p, /, a):
+    return (p, a)
 
 
 # keyword only args

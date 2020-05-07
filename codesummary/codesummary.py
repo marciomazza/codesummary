@@ -1,6 +1,9 @@
 import ast
+import sys
 from contextlib import contextmanager
 from typing import List, Tuple
+
+PY_VERSION = sys.version_info
 
 
 def list_fields_except(node, field_name):
@@ -116,7 +119,7 @@ class DependencyTrackingVisitor(ast.NodeVisitor):
         argument_names = [
             a.arg
             for arglist in (
-                args.posonlyargs,
+                args.posonlyargs if PY_VERSION >= (3, 8) else [],
                 args.args,
                 args.kwonlyargs,
                 [a for a in (args.vararg, args.kwarg) if a],

@@ -4,10 +4,11 @@ import re
 import string
 from itertools import groupby
 from pathlib import Path
+from textwrap import indent
 
 import pytest
 
-from codesummary import get_stores_and_loads, summarize
+from codesummary import codesummary, get_stores_and_loads, summarize
 from codesummary.codesummary import PY_VERSION
 
 
@@ -84,8 +85,29 @@ def load_examples_stores_loads():
             yield (stmt, stores.split(), loads.split())
 
 
+def parse_toplevel_async_before_py37(stmt):
+    stmt = indent(stmt, " " * 4)
+    tree = ast.parse(
+        f"""
+async def f():
+{stmt}"""
+    )
+    [async_def] = tree.body
+    [node] = async_def.body
+    return node
+
+
+RE_ASYNC_FOR_WITH = re.compile(r".*async *(for|with)")
+
+
 @pytest.mark.parametrize("statement, stores, loads", load_examples_stores_loads())
-def test_get_stores_and_loads(statement, stores, loads):
+def test_get_stores_and_loads(statement, stores, loads, monkeypatch):
+    # versions prior to python 3.7 cannot parse top level async for, async with and await
+    # to simplify testing we use a workaround
+    if PY_VERSION < (3, 7) and (
+        RE_ASYNC_FOR_WITH.match(statement) or statement.startswith("await ")
+    ):
+        monkeypatch.setattr(codesummary, "parse", parse_toplevel_async_before_py37)
     assert get_stores_and_loads(statement) == (stores, loads)
 
 

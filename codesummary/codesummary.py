@@ -1,5 +1,6 @@
 import ast
 import sys
+from ast import parse
 from contextlib import contextmanager
 from typing import List, Tuple
 
@@ -26,7 +27,7 @@ class DependencyTrackingVisitor(ast.NodeVisitor):
     def scan(self, statement):
         self.scopes, self.loads = [[]], []
         self.attributes = {}
-        tree = ast.parse(statement)
+        tree = parse(statement)
         self.visit(tree)
         assert len(self.scopes) == 1
         return self.current_scope, self.loads

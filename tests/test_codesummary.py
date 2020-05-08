@@ -102,8 +102,9 @@ RE_ASYNC_FOR_WITH = re.compile(r".*async *(for|with)")
 
 @pytest.mark.parametrize("statement, stores, loads", load_examples_stores_loads())
 def test_get_stores_and_loads(statement, stores, loads, monkeypatch):
-    # versions prior to python 3.7 cannot parse top level async for, async with and await
-    # to simplify testing we use a workaround
+    # Versions prior to python 3.7 cannot parse top level
+    # async for, async with and await.
+    # To simplify testing we use a workaround
     if PY_VERSION < (3, 7) and (
         RE_ASYNC_FOR_WITH.match(statement) or statement.startswith("await ")
     ):

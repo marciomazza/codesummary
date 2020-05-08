@@ -20,7 +20,8 @@ setup(
     author="Marcio Mazza",
     author_email="marciomazza@gmail.com",
     description="Reduces statements to a minimal dependency chain",
-    long_description=read("README.rst"),
+    long_description=read("README.md"),
+    long_description_content_type="text/markdown",
     packages=find_packages(exclude=("tests",)),
     install_requires=[],
     classifiers=[

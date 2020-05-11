@@ -27,10 +27,15 @@ class DependencyTrackingVisitor(ast.NodeVisitor):
     def scan(self, statement):
         self.scopes, self.loads = [[]], []
         self.attributes = {}
-        tree = parse(statement)
-        self.visit(tree)
-        assert len(self.scopes) == 1
-        return self.current_scope, self.loads
+        try:
+            tree = parse(statement)
+        except SyntaxError:
+            # ignore statements that are syntactically wrong
+            return [], []
+        else:
+            self.visit(tree)
+            assert len(self.scopes) == 1
+            return self.current_scope, self.loads
 
     def visit_Import(self, node):
         for name in node.names:

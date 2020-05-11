@@ -112,6 +112,10 @@ def test_get_stores_and_loads(statement, stores, loads, monkeypatch):
     assert get_stores_and_loads(statement) == (stores, loads)
 
 
+def test_get_stores_and_load_ignores_syntax_errors():
+    assert get_stores_and_loads("ERROR(((") == ([], [])
+
+
 def load_chain_examples():
     for source in load_python_sources(f"{EXAMPLE_DIR}/chains"):
         # lines stripping out comments
@@ -129,4 +133,8 @@ def load_chain_examples():
 
 @pytest.mark.parametrize("original_statements, final_statements", load_chain_examples())
 def test_summarize(original_statements, final_statements):
+    assert final_statements == summarize(original_statements)
+    # syntactically wrong statements are ignored
+    original_statements.insert(-1, "ERROR(((")
+    original_statements.insert(-3, "ANOTHER,,,ERROR(((")
     assert final_statements == summarize(original_statements)

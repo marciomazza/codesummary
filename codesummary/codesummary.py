@@ -185,14 +185,13 @@ def build_dependency_tree(statements):
     return deps
 
 
-def chain_dependencies(stmt, deps):
-    if stmt in deps:
-        for dep in deps[stmt]:
-            yield from chain_dependencies(dep, deps)
-    yield stmt
-
-
 def summarize(statements):
     deps = build_dependency_tree(statements)
+
+    def chain_dependencies(stmt):
+        for dep in deps.get(stmt, []):
+            yield from chain_dependencies(dep)
+        yield stmt
+
     last = statements[-1]
-    return list(chain_dependencies(last, deps))
+    return list(chain_dependencies(last))

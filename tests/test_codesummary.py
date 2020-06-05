@@ -13,13 +13,14 @@ from codesummary import codesummary, get_stores_and_loads, summarize
 
 
 def source_replace(filename, old, new):
-    source = Path(filename).read_text()
-    return source.replace(old, new)
+    path = Path(filename)
+    source = path.read_text()
+    return path, source.replace(old, new)
 
 
 def load_python_sources(base_dir):
     for path in sorted(Path(base_dir).glob("*.py")):
-        yield path.read_text()
+        yield path, path.read_text()
 
 
 EXAMPLE_DIR = "tests/examples"
@@ -65,7 +66,7 @@ def load_examples_stores_loads():
     # <stored variables> | <loaded variables>
 
     """
-    for source in load_examples_stores_loads_sources():
+    for path, source in load_examples_stores_loads_sources():
         blocks = re.split(r"\n#*\n#*\n+", source)
         # replace names by builtins in some examples
         # to test that they can be used as normal identifiers
@@ -84,7 +85,7 @@ def load_examples_stores_loads():
             ):
                 continue
 
-            yield (stmt, stores.split(), loads.split())
+            yield stmt, stores.split(), loads.split(), path
 
 
 def parse_toplevel_async_before_py37(stmt):
@@ -102,8 +103,8 @@ async def f():
 RE_ASYNC_FOR_WITH = re.compile(r".*async *(for|with)")
 
 
-@pytest.mark.parametrize("statement, stores, loads", load_examples_stores_loads())
-def test_get_stores_and_loads(statement, stores, loads, monkeypatch):
+@pytest.mark.parametrize("statement, stores, loads, path", load_examples_stores_loads())
+def test_get_stores_and_loads(statement, stores, loads, path, monkeypatch):
     # Versions prior to python 3.7 cannot parse top level
     # async for, async with and await.
     # To simplify testing we use a workaround
@@ -119,7 +120,7 @@ def test_get_stores_and_load_ignores_syntax_errors():
 
 
 def load_chain_examples():
-    for source in load_python_sources(f"{EXAMPLE_DIR}/chains"):
+    for path, source in load_python_sources(f"{EXAMPLE_DIR}/chains"):
         # lines stripping out comments
         lines = [l for l in source.splitlines() if not l.startswith("# ")]
         nodes = ast.parse("\n".join(lines)).body
@@ -130,11 +131,13 @@ def load_chain_examples():
         original_statements, _, final_statements = [
             list(g) for _, g in groupby(statements, lambda s: s.startswith("___"))
         ]
-        yield original_statements, final_statements
+        yield original_statements, final_statements, path
 
 
-@pytest.mark.parametrize("original_statements, final_statements", load_chain_examples())
-def test_summarize(original_statements, final_statements):
+@pytest.mark.parametrize(
+    "original_statements, final_statements, path", load_chain_examples()
+)
+def test_summarize(original_statements, final_statements, path):
     assert final_statements == summarize(original_statements)
     # syntactically wrong statements are ignored
     original_statements.insert(-1, "ERROR(((")

@@ -2,6 +2,7 @@ import ast
 import builtins
 import re
 import string
+import sys
 from itertools import groupby
 from pathlib import Path
 from textwrap import indent
@@ -9,7 +10,6 @@ from textwrap import indent
 import pytest
 
 from codesummary import codesummary, get_stores_and_loads, summarize
-from codesummary.codesummary import PY_VERSION
 
 
 def source_replace(filename, old, new):
@@ -79,7 +79,9 @@ def load_examples_stores_loads():
             # skip some stuff for python versions before 3.8:
             #   - positional only args in function def
             #   - walrus operator
-            if PY_VERSION < (3, 8) and (RE_POSONLY_ARGS.match(stmt) or " := " in stmt):
+            if sys.version_info < (3, 8) and (
+                RE_POSONLY_ARGS.match(stmt) or " := " in stmt
+            ):
                 continue
 
             yield (stmt, stores.split(), loads.split())
@@ -105,7 +107,7 @@ def test_get_stores_and_loads(statement, stores, loads, monkeypatch):
     # Versions prior to python 3.7 cannot parse top level
     # async for, async with and await.
     # To simplify testing we use a workaround
-    if PY_VERSION < (3, 7) and (
+    if sys.version_info < (3, 7) and (
         RE_ASYNC_FOR_WITH.match(statement) or statement.startswith("await ")
     ):
         monkeypatch.setattr(codesummary, "parse", parse_toplevel_async_before_py37)

@@ -4,8 +4,6 @@ from ast import parse
 from contextlib import contextmanager
 from typing import List, Tuple
 
-PY_VERSION = sys.version_info
-
 
 def list_fields_except(node, field_name):
     return [field for name, field in ast.iter_fields(node) if name != field_name]
@@ -125,7 +123,7 @@ class DependencyTrackingVisitor(ast.NodeVisitor):
         argument_names = [
             a.arg
             for arglist in (
-                args.posonlyargs if PY_VERSION >= (3, 8) else [],
+                args.posonlyargs if sys.version_info >= (3, 8) else [],
                 args.args,
                 args.kwonlyargs,
                 [a for a in (args.vararg, args.kwarg) if a],
